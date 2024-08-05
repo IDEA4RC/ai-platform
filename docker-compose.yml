@@ -1,0 +1,175 @@
+services:
+  
+  api_db:
+    container_name: idea4rc_ai_api_db
+    restart: unless-stopped
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=mad
+      - POSTGRES_PASSWORD=MAD
+      - POSTGRES_DB=apidb
+      - POSTGRES_HOST=idea4rc_ai_api_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_data_aiapi:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  aiapi:
+    container_name: idea4rc_ai_api
+    image: idea4rc/eng/idea4rcaiapi:latest
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=mad
+      - POSTGRES_PASSWORD=MAD
+      - POSTGRES_DB=apidb
+      - POSTGRES_HOST=idea4rc_ai_api_db
+      - POSTGRES_PORT=5432
+      - DROP_DB=False
+      - DOCKER_REGISTRY_USERNAME=yourRegistryUsernameHere
+      - DOCKER_REGISTRY_PASSWORD=yourRegistryPasswordHere
+      - DOCKER_REGISTRY_URL=ghcr.io/idea4rc/envs
+      - DOCKER_REGISTRY_DOMAIN=ghcr.io/idea4rc/envs
+      - SWAGGER_URL=http://idea4rc_ai_api:5002/api/doc/swagger.json
+      - IDEA4RCAI_DATA_FOLDER=/idea4rc_data_dir
+      - IDEA4RCAI_HOST=localhost
+      - KEYCLOAK_URL=http://keycloak:8080/realms
+      - KEYCLOAK_SECRET_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwZ9lBNvU9ZwoPTysmYIoB+017rO/7mOatp2A0wgjL3yufwnoyKZjm1Q2GsIQPsLIHPn4zGcJ/MrzhJQq1N6xWWbGFBU2zsR8dmKvMNDUmtu7nATAd+FkMUmXIr7kJ9f8yeV2R1w9xD+/ionzBxw/t4B5/lB8VOsPI0UcvsqhMboyiKQpuBiQJkBX/5ofCERrX66l6b/uAZ3evdF6Hg/6RspqOOTfrJS5hsETF6VXo1sXv+tHn0ckx8DK2bv6MXm2Qn5HY1ogFanV/Ya2t2sFlOEHLI7IxPKkWM2splEL5F0WPPttoYGubfVscbE98xJRJoQRtr+wSuF5FB33heeceQIDAQAB
+      - KEYCLOAK_ADMIN_USERNAME=eng_admin
+      - KEYCLOAK_ADMIN_PASSWORD=eng_admin
+      - KEYCLOAK_CLIENT_ID=4763454d-942f-46bd-87df-b42ed301daf3
+      - KEYCLOAK_CLIENT_ADMINROLE_ID=3e0f291f-fc70-4966-a15c-9b1e16224a3c
+      - KEYCLOAK_CLIENT_RESEARCHROLE_ID=10f7ee50-14a9-4e76-abd6-493b552dd085
+      - DATA_EXTRACTOR_HOST=http://idea4rc_ai_dataextractionjobs:5000
+      - ADMIN_USERNAME=administrator
+      - ADMIN_EMAIL=admin4idea@googlemail.com
+      - ADMIN_PASSWORD=test123
+      - PROJECT_NAME=aiapi
+      - ENVIRONMENT_NETWORK=ai-platform_environment
+      - DATAEXTRACTOR_NETWORK=ai-platform_dataextractor_backend
+    #command: sh -c "sleep 60000"
+    depends_on:
+      api_db:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "5001:5000"
+    networks:
+      - backend
+      - environment
+      - security_keycloak
+      - dataextractor_backend
+      - registry_net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - idea4rc_data_dir:/idea4rc_data_dir
+
+  dataextractionjobs_db:
+    container_name: idea4rc_ai_dataextractionjobs_db
+    restart: unless-stopped
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=mad
+      - POSTGRES_PASSWORD=MAD
+      - POSTGRES_DB=mad
+      - POSTGRES_HOST=idea4rc_ai_dataextractionjobs_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5433:5432"
+    volumes:
+      - dataextractionjobs_db:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  dataextractionjobs:
+    container_name: idea4rc_ai_dataextractionjobs
+    image: idea4rc/eng/dataextractorjob:latest
+    restart: unless-stopped
+    environment:
+      - CAPSULEFHIR_URL=http://eng-fhir-server:8088/fhir
+      - POSTGRES_USER=mad
+      - POSTGRES_PASSWORD=MAD
+      - POSTGRES_DB=mad
+      - POSTGRES_HOST=idea4rc_ai_dataextractionjobs_db
+      - POSTGRES_PORT=5432
+      - DROP_DB=False
+      - TZ=Europe/Rome
+      - SWAGGER_URL=http://idea4rc_ai_dataextractionjobs:5002/api/doc/swagger.json
+    depends_on:
+      dataextractionjobs_db:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "5002:5000"
+    volumes:
+      - dataextractionjobs:/idea4rc-ai-dataextractionjobs/src/csvdata
+    networks:
+      - backend
+      - dataextractor_backend
+      - eng-fhir-server_fhircapsule
+
+  idea4rcaigui:
+    image: "idea4rc/eng/idea4rcaigui"
+    container_name: idea4rcaigui
+    ports:
+      - "4200:4200"
+    networks:
+      - security_keycloak
+      - environment
+    environment:
+      DEMO: "false"
+      VERSION: "{'npm_package_version':'1.0.0'}" #(dev)
+      SERVER_URL: "http://idea4rc_ai_api:5001" #http://localhost:5001 
+      AUTH_BASE_URL: "http://keycloak:8080"
+      ENABLE_AUTHENTICATION: "true"
+      PORTAL_URL: "http://localhost:4200/"
+      DEFAULT_LANGUAGE: "en-US"
+      SUPPORTED_LANGUAGES: "en-US;fr-FR"
+      DOCKER_ENGINE_BASE_URL: "http://localhost:8008/docker-api" #"http://localhost:2375"
+  
+  proxy:
+    container_name: proxy
+    image: "httpd:alpine3.20"
+    ports:
+      - "8008:80"
+    networks:
+      - proxy
+    configs:
+      - source: base_config
+        target: /usr/local/apache2/conf/httpd.conf
+      - source: proxy_config
+        target: /usr/local/apache2/conf/extra/proxy-html.conf
+
+configs:
+  base_config:
+    file: ./proxy/conf/httpd.conf
+  proxy_config:
+    file: ./proxy/conf/proxy-html.conf
+
+volumes:
+  idea4rc_data_dir:
+  pg_data_aiapi:
+  dataextractionjobs_db:
+  dataextractionjobs:
+networks:
+  proxy:
+  backend:
+  environment:
+  dataextractor_backend:
+  security_keycloak:
+    external: true
+  registry_net:
+    external: true
+  #temporary networks please remove them when you will know the IP/DNS of the production servers
+  eng-fhir-server_fhircapsule:
+    external: true

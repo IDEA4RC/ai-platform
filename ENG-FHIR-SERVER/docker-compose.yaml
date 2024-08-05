@@ -1,0 +1,65 @@
+# Docker Compose file Reference (https://docs.docker.com/compose/compose-file/)
+version: "3.8"
+
+services:
+  eng-postgres-db:
+    # entrypoint: ["echo", "Service 'db' disabled"]
+    # restart: unless-stopped
+    image: "postgres"
+    container_name: eng-postgres-db
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DEFAULT_USER=${DB_DEFAULT_USER}
+      - DB_DEFAULT=${DB_DEFAULT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_USER_PASSWORD=${DB_USER_PASSWORD}
+    ports:
+      - "${DATABASE_EXT_PORT}:${DATABASE_INT_PORT}"
+    networks:
+      - fhircapsule
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - eng-db-data:/var/lib/postgresql/data
+      - ./postgres-scripts:/docker-entrypoint-initdb.d
+      #- ./postgres-conf/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+      - ./postgres-conf/pg_hba.conf:/usr/local/var/postgres/pg_hba.conf
+    #command: postgres -c config_file=/etc/postgresql/pg_hba.conf
+    #command: [ "/bin/bash", "-c", "while true; do sleep 30; done;" ]
+  eng-fhir-server:
+    image: idea4rc/hl7/eng-fhir-server:latest
+    container_name: eng-fhir-server
+    ports:
+      - "${FHIR_SERVER_PORT}:${FHIR_SERVER_PORT}"
+    networks:
+      - fhircapsule
+    volumes:
+      - eng-fhir-server-data:/data/hapi
+    configs:
+      - source: hapi
+        target: /app/config/application.yaml
+    #  - source: fhir-idea-pkg
+    #    target: /app/profiles/package.r4.tgz
+    depends_on:
+      eng-postgres-db:
+        condition: service_healthy
+configs:
+  hapi:
+    file: ./application.yaml
+  #fhir-idea-pkg:
+  #  file: ./package.r4.tgz
+#
+# Volumes
+#
+volumes:
+  eng-db-data:
+  eng-fhir-server-data:
+
+networks:
+  fhircapsule:
