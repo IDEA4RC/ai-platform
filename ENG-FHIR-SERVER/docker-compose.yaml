@@ -34,6 +34,7 @@ services:
     #command: [ "/bin/bash", "-c", "while true; do sleep 30; done;" ]
   eng-fhir-server:
     image: ghcr.io/idea4rc/fhir-data-server:1.0
+    #image: idea4rc/hl7/eng-fhir-server:latest
     container_name: eng-fhir-server
     ports:
       - "${FHIR_SERVER_PORT}:${FHIR_SERVER_PORT}"

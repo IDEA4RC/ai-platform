@@ -23,7 +23,8 @@ services:
 
   aiapi:
     container_name: idea4rc_ai_api
-    image: idea4rc/eng/idea4rcaiapi:latest
+    image: ghcr.io/idea4rc/idea4rcaiapi:1.0
+    #image: idea4rc/eng/idea4rcaiapi:latest
     restart: unless-stopped
     environment:
       - POSTGRES_USER=mad
@@ -93,7 +94,8 @@ services:
 
   dataextractionjobs:
     container_name: idea4rc_ai_dataextractionjobs
-    image: idea4rc/eng/dataextractorjob:latest
+    image: ghcr.io/idea4rc/dataextractionjob:1.0
+    #image: idea4rc/eng/dataextractorjob:latest
     restart: unless-stopped
     environment:
       - CAPSULEFHIR_URL=http://eng-fhir-server:8088/fhir
@@ -119,7 +121,8 @@ services:
       - eng-fhir-server_fhircapsule
 
   idea4rcaigui:
-    image: "idea4rc/eng/idea4rcaigui"
+    #image: "idea4rc/eng/idea4rcaigui"
+    image: ghcr.io/idea4rc/idea4rcaigui:1.0
     container_name: idea4rcaigui
     ports:
       - "4200:4200"
