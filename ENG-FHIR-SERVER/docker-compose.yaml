@@ -33,7 +33,7 @@ services:
     #command: postgres -c config_file=/etc/postgresql/pg_hba.conf
     #command: [ "/bin/bash", "-c", "while true; do sleep 30; done;" ]
   eng-fhir-server:
-    image: idea4rc/hl7/eng-fhir-server:latest
+    image: ghcr.io/idea4rc/fhir-data-server:1.0
     container_name: eng-fhir-server
     ports:
       - "${FHIR_SERVER_PORT}:${FHIR_SERVER_PORT}"

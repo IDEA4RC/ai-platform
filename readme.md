@@ -82,7 +82,7 @@ Here is a detail about this panel:
 ![Keycloak Realm RS256 key](./img/img013.png)
 
 ## 4. Docker compose file configuration
-In the docker compose file there are six services:
+In the docker compose file, at the root level, there are six services:
 
 - api_db: a Postgres database that will contain all the data necessary to execute the ai-platform correctly
 - aiapi: the service that is accounted to execute the majority of the ai-platform processes
@@ -130,6 +130,8 @@ Following, we introduce every property that is possible to use:
 - `TZ` the timezone of the container
 
 ### 2. Networks
+Following, we introduce every network used by the services included in the docker-compose file.
+
 - `proxy` the network in which the proxy is included
 - `backend` the network used by all the backend services
 - `environment` the network in which all the executed environment are included
@@ -156,14 +158,14 @@ further these volumes, each time the user generates a new environment, the syste
 
 To enable the data extraction process managed by the data extractor job service, it is mandatory to have a reachable FHIR server used for data extraction jobs.
 If you already have one, you can omit this passage. If not, you have to start a temporary FHIR server to arrange some tests and proceed with AI models production.
-To do that, you must execute the command:
+To do that, you must execute from within the folder `ENG-FHIR-SERVER` the following command:
 
 `docker-compose up -d`
 
-From the inside of the folder that contains the `ENG-FHIR-SERVER`. You can also configure the FHIR server using the environment section of the local docker compose file and the application.yml's properties.
+You can also configure the FHIR server using the environment section of the local docker compose file and the application.yml's properties.
 To have further insight about the FHIR server, you can look into the official [Hapi FHIR Portal](https://hapifhir.io).
 
 ## 6. Execution of the docker compose file
-From the inside of the folder that contains the docker compose file, you must use the following command to execute the ai-platform:
+From the root folder, you must use the following command to execute the docker compose file related to the ai-platform:
 
 `docker-compose up -d`
