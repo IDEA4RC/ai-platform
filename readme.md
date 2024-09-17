@@ -165,6 +165,12 @@ To do that, you must execute from within the folder `ENG-FHIR-SERVER` the follow
 You can also configure the FHIR server using the environment section of the local docker compose file and the application.yml's properties.
 To have further insight about the FHIR server, you can look into the official [Hapi FHIR Portal](https://hapifhir.io).
 
+### 1. FHIR Server demo data
+
+In order to run the example described in the GETTING STARTED guide (available from the ai gui), it is needed to upload some demo data. This is possible by executing the following instructions:
+- Linux like system: `.\init_fhir_local_with_example_data.sh`
+- Windows like system: `.\init_fhir_local_with_example_data.ps1`
+
 ## 6. Execution of the docker compose file
 From the root folder, you must use the following command to execute the docker compose file related to the ai-platform:
 
