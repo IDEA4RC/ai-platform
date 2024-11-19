@@ -40,21 +40,16 @@ services:
       - "${FHIR_SERVER_PORT}:${FHIR_SERVER_PORT}"
     networks:
       - fhircapsule
+      - ai-platform_proxy
     volumes:
       - eng-fhir-server-data:/data/hapi
-    configs:
-      - source: hapi
-        target: /app/config/application.yaml
+      - ./application.yaml:/app/config/application.yaml
+    #configs:
     #  - source: fhir-idea-pkg
     #    target: /app/profiles/package.r4.tgz
     depends_on:
       eng-postgres-db:
         condition: service_healthy
-configs:
-  hapi:
-    file: ./application.yaml
-  #fhir-idea-pkg:
-  #  file: ./package.r4.tgz
 #
 # Volumes
 #
@@ -64,3 +59,5 @@ volumes:
 
 networks:
   fhircapsule:
+  ai-platform_proxy:
+    external: true

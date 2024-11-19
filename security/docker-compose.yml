@@ -7,6 +7,9 @@ services:
       - POSTGRES_USER=keycloak
       - POSTGRES_PASSWORD=ALh4Pn0pU7
       - POSTGRES_DB=keycloak
+      - POSTGRES_SSL=on
+      - POSTGRES_SSL_CERT_FILE=/var/lib/postgresql/ssl/idea4rcaigui-self-signed.crt
+      - POSTGRES_SSL_KEY_FILE=/var/lib/postgresql/ssl/idea4rcaigui-self-signed.key
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloak"]
       interval: 5s
@@ -16,40 +19,64 @@ services:
       - "5435:5432"
     volumes:
       - keycloak_db:/var/lib/postgresql/data
+      - ./ssl/idea4rcaigui-self-signed.crt:/var/lib/postgresql/ssl/idea4rcaigui-self-signed.crt
+      - ./ssl/idea4rcaigui-self-signed.key:/var/lib/postgresql/ssl/idea4rcaigui-self-signed.key
     networks:
       - keycloak
-
+    #entrypoint: >
+    #  /bin/bash -c "chown postgres:postgres /var/lib/postgresql/ssl/* &&
+    #                 chmod 600 /var/lib/postgresql/ssl/* &&
+    #                 docker-entrypoint.sh postgres"
+    command: [ "-c", "ssl=on" , "-c", "ssl_cert_file=/var/lib/postgresql/ssl/idea4rcaigui-self-signed.crt", "-c", "ssl_key_file=/var/lib/postgresql/ssl/idea4rcaigui-self-signed.key"]
+      
   keycloak:
-    image: 'quay.io/keycloak/keycloak'
+    image: quay.io/keycloak/keycloak:25.0.6
     container_name: keycloak
+    user: root
     ports:
       - "8080:8080"
+      - "8443:8443"
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak
+      #KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak
+      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak?ssl=true&sslmode=allow&sslcert=/opt/keycloak/conf/idea4rcaigui-self-signed.crt&sslkey=/opt/keycloak/conf/idea4rcaigui-self-signed.key
       KC_HOSTNAME: keycloak
       KC_DB_USERNAME: keycloak
+      KEYCLOAK_SSL_REQUIRED: all
       KC_DB_PASSWORD: ALh4Pn0pU7
       KEYCLOAK_ADMIN: eng_admin
       KEYCLOAK_ADMIN_PASSWORD: eng_admin
+      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/conf/idea4rcaigui-self-signed.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/conf/idea4rcaigui-self-signed.key
       #KC_SPI_THEME_DEFAULT: 'idea-theme'
       TZ: Europe/Rome
+      #JAVA_OPTS: '-Djavax.net.debug=ssl'
+      #KC_HTTPS_TRUSTSTORE_FILE: /opt/keycloak/conf/truststore.jks
+      #KC_HTTPS_TRUSTSTORE_PASSWORD: changeit
     depends_on:
       keycloak_db:
         condition: service_healthy
-        restart: true
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:9990']
       interval: 30s
       timeout: 10s
       retries: 3
-    command: ['start-dev', '--import-realm']
+    #command: ['start-dev', '--import-realm']
+    #command: ['start', '--import-realm', '--optimized', '--verbose', '--truststore-paths=/opt/keycloak/conf/truststore.jks']
+    #command: ['start', '--import-realm', '--verbose']
+    entrypoint: >
+      /bin/sh -c "chmod 644 /opt/keycloak/conf/idea4rcaigui-self-signed.crt && 
+              chmod 600 /opt/keycloak/conf/idea4rcaigui-self-signed.key && 
+              /opt/keycloak/bin/kc.sh start --import-realm --verbose"
     networks:
       - keycloak
-    #volumes:
+    volumes:
     #  - ./scripts/disable-theme-cache.cli:/opt/keycloak/startup-scripts/disable-theme-cache.cli
     #  - ./scripts/disable-theme-cache-ha.cli:/opt/keycloak/startup-scripts/disable-theme-cache-ha.cli
     #  - ./theme:/opt/keycloak/themes/idea-theme
+      - ./ssl/idea4rcaigui-self-signed.crt:/opt/keycloak/conf/idea4rcaigui-self-signed.crt
+      - ./ssl/idea4rcaigui-self-signed.key:/opt/keycloak/conf/idea4rcaigui-self-signed.key
+    #  - ./ssl/truststore.jks:/opt/keycloak/conf/truststore.jks
 volumes:
   keycloak_db:
 networks:

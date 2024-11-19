@@ -35,19 +35,23 @@ services:
       - DROP_DB=False
       - DOCKER_REGISTRY_USERNAME=yourRegistryUsernameHere
       - DOCKER_REGISTRY_PASSWORD=yourRegistryPasswordHere
-      - DOCKER_REGISTRY_URL=ghcr.io/idea4rc/envs
+      #- DOCKER_REGISTRY_URL=https://localhost:5043
+      #- DOCKER_REGISTRY_DOMAIN=localhost:5043
       - DOCKER_REGISTRY_DOMAIN=ghcr.io/idea4rc/envs
+      - DOCKER_REGISTRY_URL=ghcr.io/idea4rc/envs
       - SWAGGER_URL=http://idea4rc_ai_api:5002/api/doc/swagger.json
       - IDEA4RCAI_DATA_FOLDER=/idea4rc_data_dir
       - IDEA4RCAI_HOST=localhost
-      - KEYCLOAK_URL=http://keycloak:8080/realms
-      - KEYCLOAK_SECRET_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwZ9lBNvU9ZwoPTysmYIoB+017rO/7mOatp2A0wgjL3yufwnoyKZjm1Q2GsIQPsLIHPn4zGcJ/MrzhJQq1N6xWWbGFBU2zsR8dmKvMNDUmtu7nATAd+FkMUmXIr7kJ9f8yeV2R1w9xD+/ionzBxw/t4B5/lB8VOsPI0UcvsqhMboyiKQpuBiQJkBX/5ofCERrX66l6b/uAZ3evdF6Hg/6RspqOOTfrJS5hsETF6VXo1sXv+tHn0ckx8DK2bv6MXm2Qn5HY1ogFanV/Ya2t2sFlOEHLI7IxPKkWM2splEL5F0WPPttoYGubfVscbE98xJRJoQRtr+wSuF5FB33heeceQIDAQAB
+      #- KEYCLOAK_URL=http://keycloak:8080/realms
+      - KEYCLOAK_URL=https://keycloak:8443/realms
+      - KEYCLOAK_SECRET_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxkXMbuX/3ViwobY07067Nkx0juf4rxExwE4IJCt1rexRlkTmnpc3k6lzhNSA075iamDIREjDPNX+SmCvM0/IYq/oZZ+gW7c2EaQezM0dkxVRJGY4euhKlBrIJPfoYP5CzwN/LIRC1FqHX8tPGUNq652E01vY9K7cQ4WNkr+79GYyLpSDl9Ko7HlBDfwW1LWJ3oKGRRtVxNk2KvYssm2QfBJcVa354XflVB+4Ei0to6ODfL1LHV4eZ/3bwmpc3FgeIMWcGPcEOxxdq2ybmElMvbVvJjExfdTdCT/A78YojdHn+r6WXgGh1xs7Lqzc8RWfF2ykQYOWpt/FecxvuiCm1wIDAQAB
       - KEYCLOAK_ADMIN_USERNAME=eng_admin
       - KEYCLOAK_ADMIN_PASSWORD=eng_admin
-      - KEYCLOAK_CLIENT_ID=4763454d-942f-46bd-87df-b42ed301daf3
-      - KEYCLOAK_CLIENT_ADMINROLE_ID=3e0f291f-fc70-4966-a15c-9b1e16224a3c
-      - KEYCLOAK_CLIENT_RESEARCHROLE_ID=10f7ee50-14a9-4e76-abd6-493b552dd085
-      - DATA_EXTRACTOR_HOST=http://idea4rc_ai_dataextractionjobs:5000
+      - KEYCLOAK_CLIENT_ID=434adeb9-1826-4487-a6c3-deefa2f56ddb
+      - KEYCLOAK_CLIENT_ADMINROLE_ID=77a9ff91-814e-4593-b582-f029cf1024d1
+      - KEYCLOAK_CLIENT_DOCTORROLE_ID=77a9ff91-814e-4593-b582-f029cf1024d1
+      - KEYCLOAK_CLIENT_RESEARCHROLE_ID=3a78c4c3-6ab9-4ee6-b52c-a4a46c39148d
+      - DATA_EXTRACTOR_HOST=https://idea4rc_ai_dataextractionjobs:5000
       - ADMIN_USERNAME=administrator
       - ADMIN_EMAIL=admin4idea@googlemail.com
       - ADMIN_PASSWORD=test123
@@ -58,15 +62,15 @@ services:
     depends_on:
       api_db:
         condition: service_healthy
-        restart: true
     ports:
       - "5001:5000"
+      - "8001:8000"
     networks:
       - backend
       - environment
       - security_keycloak
       - dataextractor_backend
-      - registry_net
+      #- registry_net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - idea4rc_data_dir:/idea4rc_data_dir
@@ -110,9 +114,9 @@ services:
     depends_on:
       dataextractionjobs_db:
         condition: service_healthy
-        restart: true
     ports:
       - "5002:5000"
+      - "8002:8000"
     volumes:
       - dataextractionjobs:/idea4rc-ai-dataextractionjobs/src/csvdata
     networks:
@@ -125,39 +129,42 @@ services:
     image: ghcr.io/idea4rc/idea4rcaigui:1.0
     container_name: idea4rcaigui
     ports:
-      - "4200:4200"
+      - "443:443"
+      - "80:80"
     networks:
       - security_keycloak
       - environment
+      - proxy
     environment:
       DEMO: "false"
       VERSION: "{'npm_package_version':'1.0.0'}" #(dev)
-      SERVER_URL: "http://idea4rc_ai_api:5001" #http://localhost:5001 
-      AUTH_BASE_URL: "http://keycloak:8080"
+      SERVER_URL: "https://idea4rc_ai_api:5001" #http://localhost:5001 
+      AUTH_BASE_URL: "https://keycloak:8443"
       ENABLE_AUTHENTICATION: "true"
-      PORTAL_URL: "http://localhost:4200/"
+      PORTAL_URL: "https://idea4rcaigui"
+      #FHIR_SERVER_URL: "http://eng-fhir-server:8088/fhir"
+      FHIR_SERVER_URL: "https://proxy:8043/fhir"
       DEFAULT_LANGUAGE: "en-US"
       SUPPORTED_LANGUAGES: "en-US;fr-FR"
-      DOCKER_ENGINE_BASE_URL: "http://localhost:8008/docker-api" #"http://localhost:2375"
-  
+      DOCKER_ENGINE_BASE_URL: "https://proxy:8043/docker-api" #"http://localhost:2375
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl/idea4rcaigui-self-signed.crt:/etc/nginx/ssl/idea4rcaigui-self-signed.crt:ro
+      - ./nginx/ssl/idea4rcaigui-self-signed.key:/etc/nginx/ssl/idea4rcaigui-self-signed.key:ro
+
   proxy:
     container_name: proxy
     image: "httpd:alpine3.20"
     ports:
       - "8008:80"
+      - "8043:443"
     networks:
       - proxy
-    configs:
-      - source: base_config
-        target: /usr/local/apache2/conf/httpd.conf
-      - source: proxy_config
-        target: /usr/local/apache2/conf/extra/proxy-html.conf
-
-configs:
-  base_config:
-    file: ./proxy/conf/httpd.conf
-  proxy_config:
-    file: ./proxy/conf/proxy-html.conf
+    volumes:
+      - ./proxy/conf/httpd.conf:/usr/local/apache2/conf/httpd.conf
+      - ./proxy/conf/proxy-html.conf:/usr/local/apache2/conf/extra/proxy-html.conf
+      - ./proxy/ssl/idea4rcaigui-self-signed.key:/usr/local/apache2/conf/server.key
+      - ./proxy/ssl/idea4rcaigui-self-signed.crt:/usr/local/apache2/conf/server.crt
 
 volumes:
   idea4rc_data_dir:
@@ -171,8 +178,8 @@ networks:
   dataextractor_backend:
   security_keycloak:
     external: true
-  registry_net:
-    external: true
+  #registry_net:
+    #external: true
   #temporary networks please remove them when you will know the IP/DNS of the production servers
   eng-fhir-server_fhircapsule:
     external: true
